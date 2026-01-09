@@ -122,13 +122,15 @@ export class Camera {
     ctx: CanvasRenderingContext2D,
     callback: (ctx: CanvasRenderingContext2D) => void
   ) {
+    const dpr = window.devicePixelRatio || 1;
     const zoomFactor = initialZoom * 2 * this._zoom;
     ctx.save();
     ctx.translate(-this.x * this._zoom, -this.y * this._zoom);
     ctx.scale(this.zoom, this.zoom);
+    // ctx.canvas.width에는 dpr이 곱해져 있으므로 다시 dpr로 나누거나 스타일 너비를 사용해야 함
     ctx.translate(
-      ctx.canvas.width / zoomFactor,
-      ctx.canvas.height / zoomFactor
+      (ctx.canvas.width / dpr) / zoomFactor,
+      (ctx.canvas.height / dpr) / zoomFactor
     );
     callback(ctx);
     ctx.restore();

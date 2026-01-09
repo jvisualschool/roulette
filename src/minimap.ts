@@ -62,6 +62,13 @@ export class Minimap implements UIObject {
     if (!ctx) return;
     const { stage } = params;
     if (!stage) return;
+
+    // 미니맵을 우측에 배치 (DPR 고려)
+    const dpr = window.devicePixelRatio || 1;
+    const canvasLogicalWidth = ctx.canvas.width / dpr;
+    const minimapWidth = 26 * 4;
+    const minimapX = canvasLogicalWidth - minimapWidth - 10;
+    this.boundingBox.x = minimapX;
     this.boundingBox.h = stage.goalY * 4;
 
     this.lastParams = params;
@@ -69,7 +76,7 @@ export class Minimap implements UIObject {
     this.ctx = ctx;
     ctx.save();
     ctx.fillStyle = params.theme.minimapBackground;
-    ctx.translate(10, 10);
+    ctx.translate(minimapX, 10);
     ctx.scale(4, 4);
     ctx.fillRect(0, 0, 26, stage.goalY);
 
@@ -95,8 +102,14 @@ export class Minimap implements UIObject {
     this.ctx.save();
     const { camera, size } = params;
     const zoom = camera.zoom * initialZoom;
-    const w = size.x / zoom;
-    const h = size.y / zoom;
+
+    // DPR을 고려한 논리적 크기 사용
+    const dpr = window.devicePixelRatio || 1;
+    const logicalWidth = size.x / dpr;
+    const logicalHeight = size.y / dpr;
+
+    const w = logicalWidth / zoom;
+    const h = logicalHeight / zoom;
     this.ctx.strokeStyle = params.theme.minimapViewport;
     this.ctx.lineWidth = 1 / zoom;
     this.ctx.strokeRect(camera.x - w / 2, camera.y - h / 2, w, h);

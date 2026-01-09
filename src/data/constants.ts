@@ -12,13 +12,13 @@ export enum Skills {
 }
 
 export const DefaultEntityColor = {
-  box: 'cyan',
+  box: '#408080',
   circle: 'yellow',
   polyline: 'white',
 } as const;
 
 export const DefaultBloomColor = {
-  box: 'cyan',
+  box: '#408080',
   circle: 'yellow',
   polyline: 'cyan',
 };
@@ -66,9 +66,9 @@ export const Themes: Record<string, ColorTheme> = {
     coolTimeIndicator: 'red',
     entity: {
       box: {
-        fill: 'cyan',
-        outline: 'cyan',
-        bloom: 'cyan',
+        fill: '#408080',      // 채도 50% 낮춘 cyan (hsl(180, 50%, 40%))
+        outline: '#408080',
+        bloom: '#408080',
         bloomRadius: 15,
       },
       circle: {
@@ -78,8 +78,8 @@ export const Themes: Record<string, ColorTheme> = {
         bloomRadius: 15,
       },
       polyline: {
-        fill: 'white',
-        outline: 'white',
+        fill: '#b0b0b0',      // 밝은 회색에서 25% 어둡게
+        outline: '#b0b0b0',   // 밝은 회색에서 25% 어둡게
         bloom: 'cyan',
         bloomRadius: 15,
       },

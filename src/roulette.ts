@@ -18,14 +18,18 @@ import { Box2dPhysics } from './physics-box2d';
 import { MouseEventHandlerName, MouseEventName } from './types/mouseEvents.type';
 import { FastForwader } from './fastForwader';
 import { ColorTheme } from './types/ColorTheme';
+import { AudioManager } from './audioManager';
 
 export class Roulette extends EventTarget {
   private _marbles: Marble[] = [];
 
   private _lastTime: number = 0;
   private _elapsed: number = 0;
+  private _fps: number = 0;
+  private _frameCount: number = 0;
+  private _lastFpsUpdate: number = 0;
 
-  private _updateInterval = 10;
+  private _updateInterval = 1000 / 120; // 120Hz 지원
   private _timeScale = 1;
   private _speed = 1;
 
@@ -43,6 +47,8 @@ export class Roulette extends EventTarget {
   private _goalDist: number = Infinity;
   private _isRunning: boolean = false;
   private _winner: Marble | null = null;
+  private _countdown: number | null = null;
+  private _showStartLine: boolean = true;
 
   private _uiObjects: UIObject[] = [];
 
@@ -54,6 +60,7 @@ export class Roulette extends EventTarget {
   private _isReady: boolean = false;
   private fastForwarder!: FastForwader;
   private _theme: ColorTheme = Themes.dark;
+  private _audioManager: AudioManager = new AudioManager();
 
   get isReady() {
     return this._isReady;
@@ -88,12 +95,24 @@ export class Roulette extends EventTarget {
 
   @bound
   private _update() {
-    if (!this._lastTime) this._lastTime = Date.now();
-    const currentTime = Date.now();
+    if (!this._lastTime) {
+      this._lastTime = performance.now();
+      this._lastFpsUpdate = performance.now();
+    }
+    const currentTime = performance.now();
+    const realDeltaTime = currentTime - this._lastTime;
 
-    this._elapsed += (currentTime - this._lastTime) * this._speed * this.fastForwarder.speed;
+    // FPS 계산
+    this._frameCount++;
+    if (currentTime - this._lastFpsUpdate >= 1000) {
+      this._fps = this._frameCount;
+      this._frameCount = 0;
+      this._lastFpsUpdate = currentTime;
+    }
+
+    this._elapsed += realDeltaTime * this._speed * this.fastForwarder.speed;
     if (this._elapsed > 100) {
-      this._elapsed %= 100;
+      this._elapsed = 100;
     }
     this._lastTime = currentTime;
 
@@ -144,8 +163,10 @@ export class Roulette extends EventTarget {
           this.dispatchEvent(
             new CustomEvent('goal', { detail: { winner: marble.name } }),
           );
-          this._winner = marble;
           this._isRunning = false;
+          this._winner = marble;
+          this._audioManager.stop('race_loop');
+          this._audioManager.play('goal');
           this._particleManager.shot(
             this._renderer.width,
             this._renderer.height,
@@ -226,6 +247,9 @@ export class Roulette extends EventTarget {
       winner: this._winner,
       size: { x: this._renderer.width, y: this._renderer.height },
       theme: this._theme,
+      countdown: this._countdown,
+      showStartLine: this._showStartLine,
+      fps: this._fps,
     };
     this._renderer.render(renderParams, this._uiObjects);
   }
@@ -308,13 +332,33 @@ export class Roulette extends EventTarget {
   }
 
   public start() {
-    this._isRunning = true;
     this._winnerRank = options.winningRank;
     if (this._winnerRank >= this._marbles.length) {
       this._winnerRank = this._marbles.length - 1;
     }
     this._camera.startFollowingMarbles();
+    this._showStartLine = true;
 
+    this._countdown = 3;
+    this._audioManager.stopAll();
+    this._audioManager.play('countdown');
+    const countInterval = setInterval(() => {
+      if (this._countdown !== null) {
+        this._countdown--;
+        if (this._countdown === 0) {
+          clearInterval(countInterval);
+          this._countdown = null;
+          this._showStartLine = false; // 출발 시 시작선 사라짐
+          this._actualStart();
+        }
+      }
+    }, 1000);
+  }
+
+  private _actualStart() {
+    this._isRunning = true;
+    this._audioManager.play('start');
+    this._audioManager.play('race_loop');
     if (this._autoRecording) {
       this._recorder.start().then(() => {
         this.physics.start();
@@ -411,6 +455,7 @@ export class Roulette extends EventTarget {
     this._clearMap();
     this._loadMap();
     this._goalDist = Infinity;
+    this._audioManager.stopAll();
   }
 
   public getCount() {

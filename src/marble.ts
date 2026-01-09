@@ -68,17 +68,24 @@ export class Marble {
     this._coolTime = this._maxCoolTime * Math.random();
     this._skillRate = 0.2 * this.weight;
 
-    const maxLine = Math.ceil(max / 10);
-    const line = Math.floor(order / 10);
+    const itemsPerLine = 6; // 한 줄에 6개씩
+    const spacing = 1.05; // 간격 30% 축소 (1.5 -> 1.05)
+    const lineSpacing = 1.2; // 행간 20% 증가
+    const maxLine = Math.ceil(max / itemsPerLine);
+    const line = Math.floor(order / itemsPerLine);
     const lineDelta = -Math.max(0, Math.ceil(maxLine - 5));
     this.hue = (360 / max) * order;
     this.color = `hsl(${this.hue} 100% 70%)`;
     this.id = order;
 
+    // 코스 중앙에 배치 (코스 폭 약 26)
+    const totalWidth = (itemsPerLine - 1) * spacing;
+    const startX = (26 - totalWidth) / 2;
+
     physics.createMarble(
       order,
-      10.25 + (order % 10) * 0.6,
-      maxLine - line + lineDelta,
+      startX + (order % itemsPerLine) * spacing, // 중앙 정렬
+      (maxLine - line) * lineSpacing + lineDelta - 1.5, // 행간 20% 증가
     );
   }
 
@@ -181,7 +188,9 @@ export class Marble {
       transformGuard(ctx, () => {
         ctx.translate(this.x, this.y);
         ctx.rotate(this.angle);
-        ctx.drawImage(skin, -hs, -hs, hs * 2, hs * 2);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(skin as CanvasImageSource, -hs, -hs, hs * 2, hs * 2);
       });
     } else {
       this._drawMarbleBody(ctx, false);
@@ -202,12 +211,13 @@ export class Marble {
 
   private _drawName(ctx: CanvasRenderingContext2D, zoom: number) {
     transformGuard(ctx, () => {
-      ctx.font = `12pt sans-serif`;
-      ctx.strokeStyle = 'black';
-      ctx.lineWidth = 2;
-      ctx.fillStyle = this.color;
-      ctx.shadowBlur = 0;
-      ctx.translate(this.x, this.y + 0.25);
+      ctx.font = `600 ${Math.max(14, 17 / (zoom / 10))}px 'Inter'`; // 20% 증가 (12->14, 14->17)
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+      ctx.lineWidth = 3;
+      ctx.fillStyle = '#cccccc'; // 밝은 회색으로 통일
+      ctx.translate(this.x, this.y + 0.65); // 10px 간격 (0.5 -> 0.65)
       ctx.scale(1 / zoom, 1 / zoom);
       ctx.strokeText(this.name, 0, 0);
       ctx.fillText(this.name, 0, 0);
