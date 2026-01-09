@@ -2,4 +2,9 @@
 node_modules
 .parcel-cache
 dist
+deploy_dist
 yarn-error.log
+.DS_Store
+**/.DS_Store
+package-lock.json
+*.map
